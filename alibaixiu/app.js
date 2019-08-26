@@ -27,12 +27,10 @@ app.use(formidableMiddleware({
     // 保留文件扩展名
     keepExtensions: true
 }));
-
 // 数据库连接
 mongoose.connect('mongodb://localhost:27017/alibaixiu', { useNewUrlParser: true, useCreateIndex: true })
     .then(() => console.log('数据库连接成功'))
     .catch(() => console.log('数据库连接失败'));
-
 // 路由
 require('./routes')(app);
 // 返回系统监听

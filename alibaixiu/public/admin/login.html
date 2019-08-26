@@ -39,6 +39,8 @@
             if (!regEmail.test(email)) {
                 $('.alert').fadeIn(1000).delay(1000).fadeOut(1000);
                 $('#msg').text('邮件地址不合法，请重新填写');
+
+
                 return;
             }
             //密码正则表达式验证

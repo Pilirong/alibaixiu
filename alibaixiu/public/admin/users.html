@@ -26,7 +26,7 @@
             <button class="btn btn-default navbar-btn fa fa-bars"></button>
             <ul class="nav navbar-nav navbar-right">
                 <li><a href="profile.html"><i class="fa fa-user"></i>个人中心</a></li>
-                <li><a href="login.html"><i class="fa fa-sign-out"></i>退出</a></li>
+                <li><a href="javascript:;" id="logout"><i class="fa fa-sign-out"></i>退出</a></li>
             </ul>
         </nav>
         <div class="container-fluid">
@@ -45,42 +45,46 @@
                             <label>头像</label>
                             <div class="form-group">
                                 <label class="form-image">
-                  <input id="avatar" type="file">
-                  <img src="../assets/img/default.png">
+                  <input id="avatar" type="file" >
+                  <!-- 图片预览 -->
+                  <img src="../assets/img/default.png" id="pre">
                   <i class="mask fa fa-upload"></i>
                 </label>
+                                <!-- 隐藏域 -->
+                                <input type="hidden" name="avatar" id="hiddenAvatar">
                             </div>
                         </div>
                         <div class="form-group">
                             <label>邮箱</label>
-                            <input class="form-control" type="email" placeholder="请输入邮箱">
+                            <input class="form-control" type="email" placeholder="请输入邮箱" name="email" id="email">
                         </div>
                         <div class="form-group">
                             <label>昵称</label>
-                            <input class="form-control" type="text" placeholder="请输入昵称">
+                            <input class="form-control" type="text" placeholder="请输入昵称" name="nickName" id="nickName">
                         </div>
                         <div class="form-group">
                             <label>密码</label>
-                            <input class="form-control" type="text" placeholder="请输入密码">
+                            <input class="form-control" type="text" placeholder="请输入密码" name="password" id="password">
                         </div>
                         <div class="form-group">
                             <div class="radio-inline">
-                                <label><input type="radio">未激活</label>
+                                <label><input type="radio" name="status" value="0" id="wjh">未激活</label>
                             </div>
                             <div class="radio-inline">
-                                <label><input type="radio">激活</label>
+                                <label><input type="radio" name="status" value="1" checked id="jh">激活</label>
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="radio-inline">
-                                <label><input type="radio">超级管理员</label>
+                                <label><input type="radio" name="role" value="admin" id="admin" checked >超级管理员</label>
                             </div>
                             <div class="radio-inline">
-                                <label><input type="radio">普通用户</label>
+                                <label><input type="radio" name="role" value="normal" id="normal">普通用户</label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <button class="btn btn-primary" type="submit">添加</button>
+                            <button class="btn btn-primary" type="button" id="addUser">添加</button>
+                            <button class="btn btn-primary" type="button" id="editUser" style="display:none">修改用户</button>
                         </div>
                     </form>
                 </div>
@@ -102,7 +106,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                            <!-- <tr>
                                 <td class="text-center"><input type="checkbox"></td>
                                 <td class="text-center"><img class="avatar" src="../assets/img/default.png"></td>
                                 <td>coder@itcast.cn</td>
@@ -137,7 +141,7 @@
                                     <a href="javascript:;" class="btn btn-default btn-xs">编辑</a>
                                     <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
                                 </td>
-                            </tr>
+                            </tr> -->
                         </tbody>
                     </table>
                 </div>
@@ -184,6 +188,167 @@
 
     <script src="../assets/vendors/jquery/jquery.js"></script>
     <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
+    <script src="../assets/vendors/art-template/template-web.js"></script>
+    <script src="../assets/js/common.js"></script>
+    <script type="text/html" id="userTpl">
+        {{each list}}
+        <tr>
+            <td class="text-center"><input type="checkbox"></td>
+            <td class="text-center"><img class="avatar" src="{{$value.avatar}}"></td>
+            <td>{{$value.email}}</td>
+            <td>{{$value.nickName}}</td>
+            <td>{{$value.status==1?'激活':'未激活'}}</td>
+            <td>{{$value.role=='admin'?'超级管理员':'普通用户'}}</td>
+            <td class="text-center" data-id='{{$value._id}}'>
+                <a href="javascript:;" class="btn btn-default btn-xs edit">编辑</a>
+                <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    </script>
+    <script>
+        //定义一个空数组
+        var userArr = [];
+        //发送请求
+        $.ajax({
+            url: '/users',
+            type: 'get',
+            success: function(res) {
+                userArr = res;
+                render(userArr)
+
+            }
+        })
+
+        function render(arr) {
+            var str = template('userTpl', {
+                list: arr
+            });
+            $('tbody').html(str)
+
+        };
+        //用户添加功能
+        $('#addUser').on('click', function() {
+                //获得表单里面提交的内容
+                let formData = $('form').serialize();
+                //发送请求
+                $.ajax({
+                    url: '/users',
+                    type: 'post',
+                    data: formData,
+                    success: function(res) {
+                        //将res推push给userArr这个数组里面,unshift在数组元素前面追加
+                        userArr.unshift(res);
+                        //然后再渲染页面，调用rendeer();
+                        render(userArr);
+                    }
+                })
+            })
+            //上传图片功能
+        $('#avatar').on('change', function() {
+                //用户选择到的文件
+                // this.files[0]
+                //创建一个表单对象
+                var formData = new FormData();
+                //将需要上传的文件插入到表单中
+                formData.append('avatar', this.files[0]);
+                //发送ajax请求
+                $.ajax({
+                    url: '/upload',
+                    type: 'post',
+                    data: formData,
+                    //告诉ajax方法不要解析参数
+                    processData: false,
+                    //告诉ajax方法不要设置请求参数的类型
+                    contentType: false,
+                    success: function(res) {
+                        //实现预览功能
+                        $('#pre').attr('src', res[0].avatar);
+                        //隐藏域input里面也存返回的图片地址
+                        $('#hiddenAvatar').val(res[0].avatar)
+                    }
+                })
+            })
+            //点击修改功能
+        var id; //定义一个全局变量的id
+        $('tbody').on('click', '.edit', function() {
+                //获取到父元素身上的id
+                id = $(this).parent().attr('data-id')
+                    //当点击修改按钮的时候，将添加改为修改用户
+                $('form>h2').text('修改用户');
+                var trObj = $(this).parents('tr');
+                //获取要修改对应的email的值
+                $('#email').val(trObj.children().eq(2).text());
+                //获取要修改对应的昵称的值
+                $('#nickName').val(trObj.children().eq(3).text());
+                //获得激活或者未激活的状态
+                var status = trObj.children().eq(4).text();
+                if (status == '激活') {
+                    //如果是激活的状态，则添加checked属性，选中状态
+                    $('#jh').prop('checked', true)
+                } else {
+                    //如果是未激活的状态，则添加checked属性，选中状态
+                    $('#wjh').prop('checked', true)
+                }
+                //获得角色
+                var role = trObj.children().eq(5).text();
+                if (role == '超级管理员') {
+                    $('#admin').prop('checked', true);
+                } else {
+                    $('#normal').prop('checked', true);
+                }
+                //获得图片src值
+                var imgSrc = trObj.children().eq(1).attr('src');
+                if (imgSrc) {
+                    //如果有图片
+                    //将需要修改的邮箱对应的自定义图片地址src给预览区
+                    $('#pre').attr('src', imgSrc);
+                    //将需要修改的邮箱对应的自定义图片地址src给隐藏域
+                    $('#hiddenAvatar').val(imgSrc)
+                } else {
+                    //如果没有图片，将原先的图片给预览器和隐藏域
+                    $('#pre').attr('src', '../assets/img/default.png');
+                    $('#hiddenAvatar').val('');
+                };
+                //当点击编辑按钮的时候，添加按钮隐藏，编辑按钮显现
+                $('#addUser').hide();
+                $('#editUser').show();
+            })
+            //给修改编辑按钮注册点击事件
+        $('#editUser').on('click', function() {
+            //serialize()就是用于收集表单数据，只要表单输入框里面有name属性就会收集到
+            var formData = $('form').serialize();
+            //发送ajax请求
+            $.ajax({
+                type: 'put',
+                //url:'/users/:id'
+                url: '/users/' + id,
+                data: formData,
+                success: function(res) {
+                    //通过res对象里面的_id属性的值去userArr这个数组里面将对应的元素找出来
+                    //如果数组里面的元素的_id的值刚好等于了res._id,将res这个对象赋值给userArr数组里面对应的元素
+                    var index = userArr.findIndex(item => item._id == res._id);
+                    userArr[index] = res;
+                    //重新渲染页面
+                    render(userArr);
+                    //提交修改后，添加按钮显现，修改按钮隐藏，清空输入框中的数据
+                    $('#addUser').show();
+                    $('#editUser').hide();
+                    //邮箱、昵称、角色（超级管理员，普通用户）、状态（激活，未激活）、图片（预览、隐藏域）清空
+                    $('#email').val('');
+                    $('#nickName').val('');
+                    $('#admin').prop('checed', true);
+                    $('#normal').prop('checked', false);
+                    $('#jh').prop('checked', true);
+                    $('#wjh').prop('checked', false);
+                    $('#pre').attr('src', '../assets/img/default.png');
+                    $('#hiddenAvatar').val('');
+                    $('form>h2').text('添加新用户')
+                }
+
+            })
+        })
+    </script>
     <script>
         NProgress.done()
     </script>
