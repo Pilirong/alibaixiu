@@ -39,24 +39,28 @@
       </div> -->
             <div class="row">
                 <div class="col-md-4">
-                    <form>
+                    <form id="sForm">
                         <h2>添加新轮播内容</h2>
                         <div class="form-group">
                             <label for="image">图片</label>
-                            <!-- show when image chose -->
-                            <img class="help-block thumbnail" style="display: none">
-                            <input id="image" class="form-control" name="image" type="file">
+                            <!-- show when image chose 图片预览区 -->
+                            <img class="help-block thumbnail" style="display: none" id="prev">
+                            <!-- 选择文件 -->
+                            <input id="image" class="form-control" type="file">
+                            <!-- 隐藏域 -->
+                            <input type="hidden" id="img" name="image">
+
                         </div>
                         <div class="form-group">
                             <label for="text">文本</label>
-                            <input id="text" class="form-control" name="text" type="text" placeholder="文本">
+                            <input id="text" class="form-control" name="title" type="text" placeholder="文本">
                         </div>
                         <div class="form-group">
                             <label for="link">链接</label>
                             <input id="link" class="form-control" name="link" type="text" placeholder="链接">
                         </div>
                         <div class="form-group">
-                            <button class="btn btn-primary" type="submit">添加</button>
+                            <button class="btn btn-primary" type="button" id="sAdd">添加</button>
                         </div>
                     </form>
                 </div>
@@ -71,7 +75,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+                            <!-- <tr>
                                 <td class="text-center"><img class="slide" src="../uploads/slide_1.jpg"></td>
                                 <td>XIU功能演示</td>
                                 <td>#</td>
@@ -86,7 +90,7 @@
                                 <td class="text-center">
                                     <a href="javascript:;" class="btn btn-danger btn-xs">删除</a>
                                 </td>
-                            </tr>
+                            </tr> -->
                         </tbody>
                     </table>
                 </div>
@@ -134,6 +138,95 @@
     <script src="../assets/vendors/jquery/jquery.js"></script>
     <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
     <script src="../assets/js/common.js"></script>
+    <script src="../assets/vendors/art-template/template-web.js"></script>
+    <script type="text/html" id="sTpl">
+        {{each data}}
+        <tr>
+            <td class="text-center"><img class="slide" src="{{$value.image}}"></td>
+            <td>{{$value.title}}</td>
+            <td>{{$value.link}}</td>
+            <td class="text-center">
+                <a href="javascript:;" class="btn btn-danger btn-xs delete" data-id="{{$value._id}}">删除</a>
+            </td>
+        </tr>
+        {{/each}}
+    </script>
+    <script>
+        var sArr = [];
+        //给文件绑定onchange事件，创建FormData对象，实现文件上传
+        $('#image').on('change', function() {
+            //用户选择到的文件
+            var file = this.files[0];
+            //创建formData对象实现二进制文件上传
+            var formData = new FormData();
+            formData.append('image', file);
+            //向服务器发送请求
+            $.ajax({
+                type: 'post',
+                url: '/upload',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(res) {
+                    //预览区
+                    $('#prev').show().attr('src', res[0].image);
+                    //隐藏域
+                    $('#img').val(res[0].image)
+                }
+            })
+        });
+        //给表单注册点击事件，获取用户信息，把数据提交到服务器
+        $('#sAdd').on('click', function() {
+            $.ajax({
+                url: '/slides',
+                type: 'post',
+                data: $('#sForm').serialize(),
+                success: function(res) {
+                    //{image: "\uploads\upload_2a2f4db1991603fbd6edb0c81389d237.jpg", link: "11111111", _id: "5d67a81347c5bb426414420a", title: "电影"}
+                    // console.log(res); //res是一个对象，sArr是一个数组
+                    sArr.push(res); //把对象给到数组
+                    //这个得到数据，虽然可以渲染页面，但没有
+                    render();
+                }
+            })
+        });
+        //向服务器发送请求，展示轮播图列表
+        $.ajax({
+            type: 'get',
+            url: '/slides',
+            success: function(res) {
+                //res是数组，数组里面每个元素是一个对象
+                sArr = res; //展示页面的时候是把返回回来的数组赋值给数组
+                render(sArr)
+
+            }
+        })
+
+        function render() {
+            var str = template('sTpl', {
+                data: sArr
+            });
+            $('tbody').html(str)
+        };
+        //删除功能
+        $('tbody').on('click', '.delete', function() {
+            if (confirm('你确认要删除么？')) {
+                var id = $(this).attr('data-id');
+                //发送ajax请求
+                $.ajax({
+                    url: '/slides/' + id,
+                    type: 'DELETE',
+                    success: function(res) {
+                        var index = sArr.findIndex(item => item._id == res._id);
+                        sArr.splice(index, 1);
+                        render(sArr)
+                    }
+
+                })
+            }
+
+        })
+    </script>
     <script>
         NProgress.done()
     </script>

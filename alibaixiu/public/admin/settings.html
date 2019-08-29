@@ -43,43 +43,45 @@
                         <input id="site_logo" name="site_logo" type="hidden">
                         <label class="form-image">
               <input id="logo" type="file">
-              <img src="../assets/img/logo.png">
+              <img src="../assets/img/logo.png" id="prev">
               <i class="mask fa fa-upload"></i>
             </label>
+                        <!-- 隐藏域 -->
+                        <input type="hidden" name="logo" id="logoUrl">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="site_name" class="col-sm-2 control-label">站点名称</label>
                     <div class="col-sm-6">
-                        <input id="site_name" name="site_name" class="form-control" type="type" placeholder="站点名称">
+                        <input id="site_name" name="title" class="form-control" type="type" placeholder="站点名称">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="site_description" class="col-sm-2 control-label">站点描述</label>
                     <div class="col-sm-6">
-                        <textarea id="site_description" name="site_description" class="form-control" placeholder="站点描述" cols="30" rows="6"></textarea>
+                        <textarea id="site_description" name="description" class="form-control" placeholder="站点描述" cols="30" rows="6"></textarea>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="site_keywords" class="col-sm-2 control-label">站点关键词</label>
                     <div class="col-sm-6">
-                        <input id="site_keywords" name="site_keywords" class="form-control" type="type" placeholder="站点关键词">
+                        <input id="site_keywords" name="keywords" class="form-control" type="type" placeholder="站点关键词">
                     </div>
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">评论</label>
                     <div class="col-sm-6">
                         <div class="checkbox">
-                            <label><input id="comment_status" name="comment_status" type="checkbox" checked>开启评论功能</label>
+                            <label><input id="comment_status" name="comment" type="checkbox" checked value="true">开启评论功能</label>
                         </div>
                         <div class="checkbox">
-                            <label><input id="comment_reviewed" name="comment_reviewed" type="checkbox" checked>评论必须经人工批准</label>
+                            <label><input id="comment_reviewed" name="review" type="checkbox" checked value="true">评论必须经人工批准</label>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <div class="col-sm-offset-2 col-sm-6">
-                        <button type="submit" class="btn btn-primary">保存设置</button>
+                        <button type="button" class="btn btn-primary">保存设置</button>
                     </div>
                 </div>
             </form>
@@ -126,6 +128,88 @@
     <script src="../assets/vendors/jquery/jquery.js"></script>
     <script src="../assets/vendors/bootstrap/js/bootstrap.js"></script>
     <script src="../assets/js/common.js"></script>
+    <script>
+        //改变文件选中的状态时
+        $('#logo').on('change', function() {
+            //获取选择的图片
+            var file = this.files[0];
+            //创建formData文件，实现二进制文件上传
+            var formData = new FormData();
+            //将获取的图片添加到formData文件里面;
+            formData.append('logo', file)
+                //发送ajax请求
+            $.ajax({
+                url: '/upload',
+                type: 'post',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(res) {
+                    console.log(res); //数组里面是对象，第一个元素的对象的logo属性是地址；
+                    //隐藏域
+                    $('#logoUrl').val(res[0].logo);
+                    //预览图
+                    $('#prev').attr('src', res[0].logo)
+                }
+            })
+        });
+
+        //点击保存设置后，将获取的表单内容给服务器
+        $('.btn').on('click', function() {
+            //发送ajax请求
+            $.ajax({
+                url: '/settings',
+                type: 'post',
+                data: $('form').serialize(),
+                success: function(res) {
+                    // console.log(res); //返回的是一个对象
+                    sArr.append(res);
+                    render(sArr)
+                }
+            })
+        });
+        var sArr = [];
+        //封装渲染页面函数
+        function render(arr) {
+            //隐藏域
+            $('#logoUrl').val(arr.logo);
+            //如果预览区没上传图片，则显示原图片
+            if (arr.logo == '') {
+                $('#prev').attr('src', "../assets/img/logo.png")
+            } else {
+                $('#prev').attr('src', arr.logo)
+            };
+            //站点名称
+            $('#site_name').val(arr.title);
+            //站点描述
+            $('#site_description').text(arr.description);
+            //站点关键字
+            $('#site_keywords').val(arr.keywords);
+            //是否开启评论功能
+            if (arr.comment) {
+                $('#comment_status').prop('checked', true);
+            } else {
+                $('#comment_status').prop('checked', false);
+            }
+
+            // 评论必须经过人工审核
+            if (arr.review) {
+                $('#comment_reviewed').prop('checked', true)
+            } else {
+                $('#comment_reviewed').prop('checked', false)
+            }
+        }
+        //将数据展示在页面上
+        $.ajax({
+            url: '/settings',
+            type: 'get',
+            success: function(res) {
+                // console.log(res);
+                sArr = res;
+                render(sArr);
+            }
+        })
+    </script>
     <script>
         NProgress.done()
     </script>
